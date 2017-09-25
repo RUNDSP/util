@@ -32,7 +32,8 @@ object Util extends Build {
   val sharedSettings = Seq(
     version := libVersion,
     organization := "com.twitter",
-    crossScalaVersions := Seq("2.10.4", "2.11.4"),
+    scalaVersion := "2.11.11",
+    crossScalaVersions := Seq("2.11.11"),
     // Workaround for a scaladoc bug which causes it to choke on
     // empty classpaths.
     unmanagedClasspath in Compile += Attributed.blank(new java.io.File("doesnotexist")),
@@ -43,12 +44,8 @@ object Util extends Build {
     ),
 
     resolvers += "twitter repo" at "http://maven.twttr.com",
-
-    publishM2Configuration <<= (packagedArtifacts, checksums in publish, ivyLoggingLevel) map { (arts, cs, level) =>
-      Classpaths.publishConfig(arts, None, resolverName = m2Repo.name, checksums = cs, logging = level)
-    },
-    publishM2 <<= Classpaths.publishTask(publishM2Configuration, deliverLocal),
-    otherResolvers += m2Repo,
+    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+    publishTo := Some("releases" at "http://maven.rundsp.com:8081/nexus/content/repositories/releases"),
 
     scalacOptions ++= Seq("-encoding", "utf8"),
     scalacOptions += "-deprecation",
@@ -62,33 +59,7 @@ object Util extends Build {
     // Sonatype publishing
     publishArtifact in Test := false,
     pomIncludeRepository := { _ => false },
-    publishMavenStyle := true,
-    pomExtra := (
-      <url>https://github.com/twitter/util</url>
-      <licenses>
-        <license>
-          <name>Apache License, Version 2.0</name>
-          <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-        </license>
-      </licenses>
-      <scm>
-        <url>git@github.com:twitter/util.git</url>
-        <connection>scm:git:git@github.com:twitter/util.git</connection>
-      </scm>
-      <developers>
-        <developer>
-          <id>twitter</id>
-          <name>Twitter Inc.</name>
-          <url>https://www.twitter.com/</url>
-        </developer>
-      </developers>),
-    publishTo <<= version { (v: String) =>
-      val nexus = "https://oss.sonatype.org/"
-      if (v.trim.endsWith("SNAPSHOT"))
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-    }
+    publishMavenStyle := true
   )
 
   lazy val util = Project(
@@ -183,6 +154,7 @@ object Util extends Build {
       sharedSettings
   ).settings(
     name := "util-core",
+    scalaVersion := "2.11.11",
     libraryDependencies ++= Seq(
       "com.twitter.common" % "objectsize" % "0.0.10" % "test",
       "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
@@ -208,7 +180,7 @@ object Util extends Build {
       sharedSettings
   ).settings(
     name := "util-eval",
-    crossScalaVersions ~= { versions => versions filter (_ != "2.11.4") },
+    crossScalaVersions ~= { versions => versions filter (_ != "2.11.11") },
     libraryDependencies <+= scalaVersion { "org.scala-lang" % "scala-compiler" % _ % "compile" }
   ).dependsOn(utilCore)
 
@@ -311,7 +283,8 @@ object Util extends Build {
     name := "util-zk",
     libraryDependencies ++= Seq(
       zkDependency
-    )
+    ),
+    scalaVersion := "2.11.11"
   ).dependsOn(utilCore, utilCollection, utilLogging)
 
   lazy val utilZkCommon = Project(
